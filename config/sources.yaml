@@ -1,0 +1,158 @@
+# Source definitions. Adding a new source is a config change, not code.
+# Polled in order. `enabled: false` skips without removing.
+
+# === Reddit (public JSON, no auth) ===
+
+- name: r/SaaS
+  type: reddit
+  enabled: true
+  config:
+    subreddit: SaaS
+    intent_phrases:
+      - "does anyone know"
+      - "i need a tool"
+      - "alternative to"
+      - "i wish there was"
+      - "wish someone would build"
+    limit: 50
+
+- name: r/microsaas
+  type: reddit
+  enabled: true
+  config:
+    subreddit: microsaas
+    intent_phrases:
+      - "anyone else need"
+      - "i gave up because"
+      - "switched from"
+      - "wish there was"
+    limit: 50
+
+- name: r/EntrepreneurRideAlong
+  type: reddit
+  enabled: true
+  config:
+    subreddit: EntrepreneurRideAlong
+    intent_phrases:
+      - "i'm manually"
+      - "spreadsheet for"
+      - "no tool exists for"
+    limit: 50
+
+- name: r/Warhammer40k
+  type: reddit
+  enabled: true
+  config:
+    subreddit: Warhammer40k
+    intent_phrases:
+      - "no tool for"
+      - "manually tracking"
+      - "wish there was an app"
+    limit: 50
+
+- name: r/minipainting
+  type: reddit
+  enabled: true
+  config:
+    subreddit: minipainting
+    intent_phrases:
+      - "wish there was an app"
+      - "does anyone know of an app"
+      - "tool for tracking"
+    limit: 50
+
+- name: r/ClaudeAI
+  type: reddit
+  enabled: true
+  config:
+    subreddit: ClaudeAI
+    intent_phrases:
+      - "i wish claude could"
+      - "workflow i can't automate"
+      - "no good way to"
+    limit: 50
+
+- name: r/LocalLLaMA
+  type: reddit
+  enabled: true
+  config:
+    subreddit: LocalLLaMA
+    intent_phrases:
+      - "no good ui for"
+      - "has to be a better way"
+      - "manually doing this"
+    limit: 50
+
+- name: r/mcp
+  type: reddit
+  enabled: true
+  config:
+    subreddit: mcp
+    intent_phrases:
+      - "does an mcp server exist"
+      - "looking for"
+    limit: 50
+
+- name: r/3Dprinting
+  type: reddit
+  enabled: false  # higher volume, lower signal — enable later
+  config:
+    subreddit: 3Dprinting
+    intent_phrases:
+      - "no app for"
+      - "spreadsheet for"
+      - "manually tracking"
+    limit: 50
+
+# === HackerNews (Algolia API, free) ===
+
+- name: HN front page
+  type: hackernews
+  enabled: true
+  config:
+    query_type: front_page
+    limit: 30
+
+- name: HN Ask
+  type: hackernews
+  enabled: true
+  config:
+    query_type: ask_hn
+    intent_phrases:
+      - "would pay for"
+      - "need something that"
+      - "tool that does"
+    limit: 30
+
+- name: r/SideProject
+  type: reddit
+  enabled: true
+  config:
+    subreddit: SideProject
+    intent_phrases:
+      - "would pay for"
+      - "wish there was"
+      - "no good tool for"
+    limit: 50
+
+- name: r/Entrepreneur
+  type: reddit
+  enabled: true
+  config:
+    subreddit: Entrepreneur
+    intent_phrases:
+      - "i wish someone would build"
+      - "paying too much for"
+      - "terrible software for"
+    limit: 50
+
+# === IndieHackers RSS (currently disabled — IH no longer publishes a
+# public RSS feed; their site is a Firebase SPA. Adapter code works fine
+# for any other RSS feed; substitute when a working one is identified.) ===
+
+- name: IndieHackers main
+  type: indiehackers_rss
+  enabled: false
+  config:
+    feed_url: "https://www.indiehackers.com/feed.xml"
+    limit: 30

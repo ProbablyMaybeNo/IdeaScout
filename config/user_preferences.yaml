@@ -1,0 +1,46 @@
+# Per-user preferences. Multi-tenant ready: this is the only file that
+# would change per paying user when productised.
+
+user:
+  name: Ross
+  timezone: America/Los_Angeles
+
+# Domains to weight more heavily in the digest.
+# Higher score = more likely to surface in top-N.
+domain_weights:
+  tabletop_gaming: 1.5
+  kids_content: 1.3
+  ai_builders: 1.5
+  "3d_printing": 1.0
+  developer_tools: 1.2
+  creator_tools: 1.0
+  general_b2b: 0.9
+  general_consumer: 0.7
+  music: 0.6
+  video_games: 0.8
+
+# Capabilities the user can deliver — affects solo_buildable_score interpretation.
+capabilities:
+  - python
+  - nextjs
+  - typescript
+  - claude_code_power_user
+  - comfyui_lora_training
+  - playwright_scraping
+  - voice_agent_integration
+  - mcp_server_publishing
+  - rapid_prototyping_1_2_days
+
+# Deal-breakers. Posts in these categories get filtered before classification.
+exclude_signals:
+  - hardware_required
+  - regulated_industry  # finance, healthcare without compliance budget
+  - capital_intensive
+
+# Digest format
+digest:
+  top_n: 20
+  output_dir: data/digests
+  formats:
+    - markdown
+    # - notion  # Day 3
