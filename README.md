@@ -67,9 +67,28 @@ IdeaScout/
 └── tests/
 ```
 
+## Automation (Windows Task Scheduler)
+
+```powershell
+# Install: registers daily poll/classify (06:00) + weekly digest (Fri 07:00)
+.\scripts\install_schedule.ps1
+
+# Run a task immediately
+Start-ScheduledTask -TaskPath '\IdeaScout\' -TaskName 'Daily Poll And Classify'
+
+# Tail today's log
+Get-Content "data\logs\$(Get-Date -Format yyyy-MM-dd)-poll-classify.log" -Tail 30 -Wait
+
+# Uninstall
+.\scripts\uninstall_schedule.ps1
+```
+
+See `scripts/README.md` for details and troubleshooting.
+
 ## Status
 
-- [x] Day 1 — scaffolding, schema, Reddit/HN/IH adapters, ingest pipeline
-- [ ] Day 2 — Ollama classifier integration
+- [x] Day 1 — scaffolding, schema, Reddit/HN/RSS adapters, ingest pipeline
+- [x] Day 2 — Ollama classifier integration (5-signal demand framework)
+- [x] Day 2.5 — Windows Task Scheduler automation (daily 06:00 / weekly Fri 07:00)
 - [ ] Day 3 — Friday digest generator + Next.js dashboard
-- [ ] Day 4 — ProductHunt + GitHub Trending + PulseMCP adapters, Task Scheduler automation
+- [ ] Day 4 — ProductHunt + GitHub Trending + PulseMCP + Etsy + Google Trends adapters
