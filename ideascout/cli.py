@@ -1,25 +1,35 @@
 """IdeaScout CLI.
 
-Subcommands available on Day 1:
-  init     — create the DB and sync sources.yaml
-  sources  — list configured sources
-  poll     — poll every enabled source
-  stats    — post counts by source
-
-Day 2-3 subcommands (stubs for now):
-  classify, digest
+Subcommands:
+  init      — create the DB and sync sources.yaml
+  sources   — list configured sources
+  poll      — poll every enabled source
+  classify  — score unclassified posts via local Ollama
+  signals   — show top demand signals from current classifications
+  stats     — post counts by source
+  digest    — (Day 3) generate weekly markdown digest
 """
 from __future__ import annotations
 
 import argparse
+import json
 import sys
 
+from ideascout.classifier import (
+    ClassifierError,
+    OllamaClassifier,
+    load_classifier_config,
+)
 from ideascout.db import (
     connect,
+    count_classifications,
     count_posts,
     count_posts_by_source,
     init_schema,
+    insert_classification,
+    list_demand_signals,
     list_enabled_sources,
+    list_unclassified_posts,
 )
 from ideascout.ingest import poll_all
 from ideascout.sources_loader import sync_sources_to_db
@@ -83,9 +93,105 @@ def cmd_stats(_args) -> int:
     return 0
 
 
-def cmd_classify(_args) -> int:
-    print("classify: not implemented yet — Day 2.", file=sys.stderr)
-    return 1
+def cmd_classify(args) -> int:
+    conn = connect()
+    init_schema(conn)
+    sync_sources_to_db(conn)
+
+    cfg = load_classifier_config()
+    classifier = OllamaClassifier(cfg)
+
+    print(f"Classifier {cfg.version} model={cfg.model} url={cfg.ollama_url}")
+    if not classifier.healthcheck():
+        print(
+            f"  [fail] Ollama unreachable or model {cfg.model!r} not pulled. "
+            f"Run `ollama serve` and `ollama pull {cfg.model}`.",
+            file=sys.stderr,
+        )
+        return 2
+
+    pending = list_unclassified_posts(conn, cfg.version, limit=args.limit)
+    if not pending:
+        print("Nothing to classify.")
+        return 0
+
+    print(f"Classifying {len(pending)} post(s)...")
+    ok = 0
+    failed = 0
+    for i, row in enumerate(pending, 1):
+        title = row["title"]
+        try:
+            result = classifier.classify_post(
+                source_name=row["source_name"],
+                title=title,
+                body=row["body"] or "",
+            )
+            insert_classification(
+                conn,
+                post_id=row["id"],
+                classifier_version=cfg.version,
+                row=result.to_db_row(),
+            )
+            ok += 1
+            if not args.quiet:
+                tag = "DEMAND" if result.is_demand_signal else "skip  "
+                conf = f"{result.demand_confidence:.2f}"
+                print(
+                    f"  [{i}/{len(pending)}] {tag} conf={conf} u={result.urgency_score} "
+                    f"b={result.solo_buildable_score} | {title[:80]}"
+                )
+        except ClassifierError as e:
+            failed += 1
+            print(
+                f"  [{i}/{len(pending)}] ERROR {e}: {title[:80]}",
+                file=sys.stderr,
+            )
+
+    total = count_classifications(conn, cfg.version)
+    print()
+    print(
+        f"Classify complete: {ok} ok, {failed} failed. "
+        f"Total at version {cfg.version}: {total}."
+    )
+    return 0 if failed == 0 else 2
+
+
+def cmd_signals(args) -> int:
+    conn = connect()
+    init_schema(conn)
+    cfg = load_classifier_config()
+    rows = list_demand_signals(
+        conn,
+        cfg.version,
+        min_confidence=args.min_confidence,
+        limit=args.limit,
+    )
+    if not rows:
+        print(
+            f"No demand signals found at version {cfg.version} "
+            f"with confidence >= {args.min_confidence}."
+        )
+        return 0
+    print(
+        f"Top {len(rows)} demand signal(s) "
+        f"(version {cfg.version}, min_confidence={args.min_confidence}):"
+    )
+    print()
+    for r in rows:
+        tags = json.loads(r["domain_tags"] or "[]")
+        score = r["total_score"]
+        print(f"[score {score}/25, conf {r['demand_confidence']:.2f}] {r['source_name']}")
+        print(f"  {r['title']}")
+        if r["summary"]:
+            print(f"  -> {r['summary']}")
+        print(
+            f"  tags={','.join(tags)}  u={r['urgency_score']}  "
+            f"buildable={r['solo_buildable_score']}  pain={r['workaround_pain']}  "
+            f"pay={r['payment_evidence']}  niche={r['niche_specificity']}"
+        )
+        print(f"  {r['url']}")
+        print()
+    return 0
 
 
 def cmd_digest(_args) -> int:
@@ -105,7 +211,17 @@ def build_parser() -> argparse.ArgumentParser:
     p_poll.set_defaults(func=cmd_poll)
 
     sub.add_parser("stats", help="post counts by source").set_defaults(func=cmd_stats)
-    sub.add_parser("classify", help="(Day 2) classify new posts via Ollama").set_defaults(func=cmd_classify)
+
+    p_cls = sub.add_parser("classify", help="classify new posts via Ollama")
+    p_cls.add_argument("--limit", type=int, default=None, help="cap posts per run")
+    p_cls.add_argument("--quiet", "-q", action="store_true")
+    p_cls.set_defaults(func=cmd_classify)
+
+    p_sig = sub.add_parser("signals", help="show top demand signals")
+    p_sig.add_argument("--limit", type=int, default=20)
+    p_sig.add_argument("--min-confidence", type=float, default=0.5)
+    p_sig.set_defaults(func=cmd_signals)
+
     sub.add_parser("digest", help="(Day 3) generate weekly markdown digest").set_defaults(func=cmd_digest)
 
     return p

@@ -1,4 +1,4 @@
-"""IndieHackers RSS adapter. Generic enough to handle any RSS/Atom feed."""
+"""Generic RSS / Atom adapter. Works for any feed_url."""
 from __future__ import annotations
 
 from datetime import datetime, timezone
@@ -10,8 +10,8 @@ from ideascout.adapters.base import register_adapter
 from ideascout.models import RawPost
 
 
-@register_adapter("indiehackers_rss")
-class IndieHackersRssAdapter:
+@register_adapter("rss")
+class RssAdapter:
     type_name: str
 
     def poll(self, config: dict) -> list[RawPost]:

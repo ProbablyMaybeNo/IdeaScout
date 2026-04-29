@@ -1,5 +1,5 @@
-# Classifier configuration. Day 2 will populate this with prompts.
-# Versioned so re-classification can be batched without losing history.
+# Classifier configuration. Versioned so re-classification can be batched
+# without losing history when prompts change.
 
 active_version: v1.0
 
@@ -7,16 +7,17 @@ versions:
   v1.0:
     model: qwen2.5:14b
     ollama_url: http://localhost:11434
-    description: "Initial 5-signal demand classifier."
-    # prompt: see ideascout/classifier.py — Day 2
-    # dimensions:
-    #   - is_demand_signal (bool)
-    #   - demand_confidence (float 0-1)
-    #   - signal_type (asking_for_tool | describing_pain | success_story | news | show_and_tell | other)
-    #   - domain_tags (array)
-    #   - urgency_score (1-5)
-    #   - solo_buildable_score (1-5)
-    #   - workaround_pain (1-5)         # five-signal framework
-    #   - payment_evidence (1-5)        # five-signal framework
-    #   - niche_specificity (1-5)       # five-signal framework
-    #   - summary (string)
+    description: |
+      Initial 5-signal demand classifier. Outputs:
+        - is_demand_signal (bool)
+        - demand_confidence (float 0-1)
+        - signal_type (asking_for_tool | describing_pain | success_story
+                       | news | show_and_tell | other)
+        - domain_tags (array, fixed enum)
+        - urgency_score (1-5)            # how urgent is the need
+        - solo_buildable_score (1-5)     # can a solo dev ship in <2 weeks
+        - workaround_pain (1-5)          # 5-signal framework: existing manual workaround
+        - payment_evidence (1-5)         # 5-signal framework: willingness to pay
+        - niche_specificity (1-5)        # 5-signal framework: depth advantage
+        - summary (string, <=200 chars)
+      Prompt locked in ideascout/classifier.py as PROMPT_V1.

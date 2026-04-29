@@ -146,13 +146,34 @@
       - "terrible software for"
     limit: 50
 
-# === IndieHackers RSS (currently disabled — IH no longer publishes a
-# public RSS feed; their site is a Firebase SPA. Adapter code works fine
-# for any other RSS feed; substitute when a working one is identified.) ===
+# === RSS feeds (any feed_url works with the `rss` type) ===
 
+# IndieHackers no longer publishes a public RSS feed (Firebase SPA, no /feed
+# endpoint that returns XML). Kept disabled as a documented gap.
 - name: IndieHackers main
-  type: indiehackers_rss
+  type: rss
   enabled: false
   config:
     feed_url: "https://www.indiehackers.com/feed.xml"
     limit: 30
+
+# Pew Research Center — tech adoption + digital trends, free RSS, high
+# editorial quality. Macro context for the digest, not direct demand signal.
+- name: Pew Research — Internet & Tech
+  type: rss
+  enabled: true
+  config:
+    feed_url: "https://www.pewresearch.org/internet/feed/"
+    limit: 20
+
+# === Day-4 sources to add (need custom adapters):
+# - Google Trends — pytrends or scraping trends.google.com/trends/api
+#   for niche-specific search velocity (signal: rising query = unmet need)
+# - Statista — paywalled but free headline figures scrapeable for category
+#   sizing (more "context" than "signal")
+# - PulseMCP Trending — pulsemcp.com/servers/trends scrape
+# - ProductHunt — GraphQL API at api.producthunt.com/v2/api/graphql
+# - GitHub Trending — html scrape of github.com/trending
+# - Etsy Best Sellers — etsy.com/search?q=...&order=highest_reviews scrape
+# - Acquire.com listings — needs free account, scrape after login
+# ===

@@ -14,7 +14,7 @@ live = pytest.mark.skipif(
 
 
 def test_registry_has_day1_adapters():
-    for name in ("reddit", "hackernews", "indiehackers_rss"):
+    for name in ("reddit", "hackernews", "rss"):
         a = get_adapter(name)
         assert a.type_name == name
 

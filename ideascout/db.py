@@ -200,3 +200,104 @@ def iter_posts_since(
         (since.isoformat(),),
     )
     yield from cur
+
+
+# ---------- classifications ----------
+
+def list_unclassified_posts(
+    conn: sqlite3.Connection, classifier_version: str, limit: int | None = None
+) -> list[sqlite3.Row]:
+    """Return posts that have no classification at the given version."""
+    sql = """
+        SELECT p.id, p.title, p.body, p.url, s.name AS source_name
+        FROM posts p
+        JOIN sources s ON s.id = p.source_id
+        WHERE NOT EXISTS (
+            SELECT 1 FROM classifications c
+            WHERE c.post_id = p.id AND c.classifier_version = ?
+        )
+        ORDER BY p.scraped_at DESC
+    """
+    params: tuple = (classifier_version,)
+    if limit is not None:
+        sql += " LIMIT ?"
+        params = (classifier_version, limit)
+    cur = conn.execute(sql, params)
+    return list(cur.fetchall())
+
+
+def insert_classification(
+    conn: sqlite3.Connection,
+    *,
+    post_id: int,
+    classifier_version: str,
+    row: dict,
+) -> int:
+    cur = conn.execute(
+        """
+        INSERT OR REPLACE INTO classifications
+            (post_id, classifier_version,
+             is_demand_signal, demand_confidence, signal_type, domain_tags,
+             urgency_score, solo_buildable_score,
+             workaround_pain, payment_evidence, niche_specificity,
+             summary)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """,
+        (
+            post_id,
+            classifier_version,
+            row["is_demand_signal"],
+            row["demand_confidence"],
+            row["signal_type"],
+            row["domain_tags"],
+            row["urgency_score"],
+            row["solo_buildable_score"],
+            row["workaround_pain"],
+            row["payment_evidence"],
+            row["niche_specificity"],
+            row["summary"],
+        ),
+    )
+    conn.commit()
+    return cur.lastrowid or 0
+
+
+def count_classifications(conn: sqlite3.Connection, classifier_version: str) -> int:
+    cur = conn.execute(
+        "SELECT COUNT(*) AS n FROM classifications WHERE classifier_version = ?",
+        (classifier_version,),
+    )
+    return int(cur.fetchone()["n"])
+
+
+def list_demand_signals(
+    conn: sqlite3.Connection,
+    classifier_version: str,
+    *,
+    min_confidence: float = 0.5,
+    limit: int = 50,
+) -> list[sqlite3.Row]:
+    cur = conn.execute(
+        """
+        SELECT
+            p.id, p.title, p.url, p.body,
+            s.name AS source_name,
+            c.demand_confidence, c.signal_type, c.domain_tags,
+            c.urgency_score, c.solo_buildable_score,
+            c.workaround_pain, c.payment_evidence, c.niche_specificity,
+            c.summary,
+            (c.urgency_score + c.solo_buildable_score
+             + c.workaround_pain + c.payment_evidence + c.niche_specificity)
+                AS total_score
+        FROM classifications c
+        JOIN posts p ON p.id = c.post_id
+        JOIN sources s ON s.id = p.source_id
+        WHERE c.classifier_version = ?
+          AND c.is_demand_signal = 1
+          AND c.demand_confidence >= ?
+        ORDER BY total_score DESC, c.demand_confidence DESC
+        LIMIT ?
+        """,
+        (classifier_version, min_confidence, limit),
+    )
+    return list(cur.fetchall())

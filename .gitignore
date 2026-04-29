@@ -1,6 +1,8 @@
 # Local data and secrets
 data/*.db
 data/*.db-journal
+data/*.db-shm
+data/*.db-wal
 data/digests/*.md
 .env
 
