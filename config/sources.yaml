@@ -166,14 +166,88 @@
     feed_url: "https://www.pewresearch.org/internet/feed/"
     limit: 20
 
-# === Day-4 sources to add (need custom adapters):
-# - Google Trends — pytrends or scraping trends.google.com/trends/api
-#   for niche-specific search velocity (signal: rising query = unmet need)
-# - Statista — paywalled but free headline figures scrapeable for category
-#   sizing (more "context" than "signal")
-# - PulseMCP Trending — pulsemcp.com/servers/trends scrape
-# - ProductHunt — GraphQL API at api.producthunt.com/v2/api/graphql
-# - GitHub Trending — html scrape of github.com/trending
-# - Etsy Best Sellers — etsy.com/search?q=...&order=highest_reviews scrape
-# - Acquire.com listings — needs free account, scrape after login
+# Lenny's Newsletter — PM / SaaS founder commentary, free RSS, high signal.
+- name: Lenny's Newsletter
+  type: rss
+  enabled: true
+  config:
+    feed_url: "https://www.lennysnewsletter.com/feed"
+    limit: 20
+
+# Not Boring (Packy McCormick) — strategic startup commentary.
+- name: Not Boring
+  type: rss
+  enabled: true
+  config:
+    feed_url: "https://www.notboring.co/feed"
+    limit: 20
+
+# Stratechery (Ben Thompson) — paywalled body, but free RSS headlines/tags
+# carry topic signal.
+- name: Stratechery
+  type: rss
+  enabled: true
+  config:
+    feed_url: "https://stratechery.com/feed/"
+    limit: 20
+
+# === PulseMCP — public v0beta JSON API, no auth needed ===
+
+- name: PulseMCP — recent servers
+  type: pulsemcp
+  enabled: true
+  config:
+    limit: 50
+
+# === GitHub Trending — HTML scrape of github.com/trending ===
+
+- name: GitHub Trending — Python (daily)
+  type: github_trending
+  enabled: true
+  config:
+    language: python
+    since: daily
+    min_stars_today: 50
+
+- name: GitHub Trending — TypeScript (weekly)
+  type: github_trending
+  enabled: true
+  config:
+    language: typescript
+    since: weekly
+    min_stars_today: 100
+
+# === Y Combinator companies — disabled, page is now Algolia-frontend
+# rendered without inline credentials, so SSR JSON parse fails. Day 5
+# follow-up: chase the Algolia public-search-key in a separate JS bundle. ===
+
+- name: YC companies (recent batches)
+  type: ycombinator
+  enabled: false
+  config:
+    limit: 60
+
+# === ProductHunt — public RSS feeds, no auth needed ===
+
+- name: ProductHunt — main feed
+  type: rss
+  enabled: true
+  config:
+    feed_url: "https://www.producthunt.com/feed"
+    limit: 30
+
+- name: ProductHunt — AI category
+  type: rss
+  enabled: true
+  config:
+    feed_url: "https://www.producthunt.com/feed?category=artificial-intelligence"
+    limit: 30
+
+# === Day-4 still TODO (require credentials or paid tools) ===
+# - ProductHunt — GraphQL API at api.producthunt.com/v2/api/graphql, needs free dev key
+# - Google Trends — pytrends Python lib, niche-specific search velocity
+# - Statista — paywalled; free headline figures scrapeable for category sizing
+# - Etsy Best Sellers — etsy.com/search; bot detection requires careful scraping
+# - Meta Ad Library — public API but needs FB dev account
+# - Acquire.com listings — free account required, login + scrape
 # ===

@@ -19,6 +19,12 @@ def test_registry_has_day1_adapters():
         assert a.type_name == name
 
 
+def test_registry_has_day4_adapters():
+    for name in ("pulsemcp", "github_trending", "ycombinator"):
+        a = get_adapter(name)
+        assert a.type_name == name
+
+
 def test_registry_unknown_raises():
     with pytest.raises(KeyError):
         get_adapter("not-a-real-type")
