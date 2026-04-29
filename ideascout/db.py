@@ -276,11 +276,11 @@ def list_demand_signals(
     *,
     min_confidence: float = 0.5,
     limit: int = 50,
+    since_iso: str | None = None,
 ) -> list[sqlite3.Row]:
-    cur = conn.execute(
-        """
+    sql = """
         SELECT
-            p.id, p.title, p.url, p.body,
+            p.id, p.title, p.url, p.body, p.posted_at, p.scraped_at,
             s.name AS source_name,
             c.demand_confidence, c.signal_type, c.domain_tags,
             c.urgency_score, c.solo_buildable_score,
@@ -295,9 +295,135 @@ def list_demand_signals(
         WHERE c.classifier_version = ?
           AND c.is_demand_signal = 1
           AND c.demand_confidence >= ?
-        ORDER BY total_score DESC, c.demand_confidence DESC
-        LIMIT ?
+    """
+    params: list = [classifier_version, min_confidence]
+    if since_iso is not None:
+        sql += " AND p.scraped_at >= ?"
+        params.append(since_iso)
+    sql += " ORDER BY total_score DESC, c.demand_confidence DESC LIMIT ?"
+    params.append(limit)
+    cur = conn.execute(sql, params)
+    return list(cur.fetchall())
+
+
+def post_count_since(conn: sqlite3.Connection, since_iso: str) -> int:
+    cur = conn.execute(
+        "SELECT COUNT(*) AS n FROM posts WHERE scraped_at >= ?",
+        (since_iso,),
+    )
+    return int(cur.fetchone()["n"])
+
+
+def classification_counts_since(
+    conn: sqlite3.Connection, classifier_version: str, since_iso: str
+) -> dict:
+    cur = conn.execute(
+        """
+        SELECT
+            COUNT(*) AS classified,
+            SUM(CASE WHEN c.is_demand_signal = 1 THEN 1 ELSE 0 END) AS demand,
+            SUM(CASE WHEN c.is_demand_signal = 1
+                      AND (c.urgency_score + c.solo_buildable_score
+                           + c.workaround_pain + c.payment_evidence
+                           + c.niche_specificity) >= 15
+                     THEN 1 ELSE 0 END) AS high_conviction
+        FROM classifications c
+        JOIN posts p ON p.id = c.post_id
+        WHERE c.classifier_version = ?
+          AND p.scraped_at >= ?
         """,
-        (classifier_version, min_confidence, limit),
+        (classifier_version, since_iso),
+    )
+    row = cur.fetchone()
+    return {
+        "classified": int(row["classified"] or 0),
+        "demand": int(row["demand"] or 0),
+        "high_conviction": int(row["high_conviction"] or 0),
+    }
+
+
+def domain_breakdown_since(
+    conn: sqlite3.Connection, classifier_version: str, since_iso: str
+) -> list[sqlite3.Row]:
+    """Per-domain count of demand signals + average total score in window."""
+    cur = conn.execute(
+        """
+        SELECT
+            je.value AS domain,
+            COUNT(*) AS signal_count,
+            ROUND(AVG(
+                c.urgency_score + c.solo_buildable_score
+                + c.workaround_pain + c.payment_evidence + c.niche_specificity
+            ), 1) AS avg_score
+        FROM classifications c
+        JOIN posts p ON p.id = c.post_id
+        JOIN json_each(c.domain_tags) je
+        WHERE c.classifier_version = ?
+          AND c.is_demand_signal = 1
+          AND p.scraped_at >= ?
+        GROUP BY je.value
+        ORDER BY signal_count DESC, avg_score DESC
+        """,
+        (classifier_version, since_iso),
     )
     return list(cur.fetchall())
+
+
+def source_health_since(
+    conn: sqlite3.Connection, classifier_version: str, since_iso: str
+) -> list[sqlite3.Row]:
+    """Per-source posts scraped + demand signals in window + last_polled_at."""
+    cur = conn.execute(
+        """
+        SELECT
+            s.name AS source_name,
+            s.type AS source_type,
+            s.last_polled_at,
+            s.last_error,
+            COUNT(p.id) AS posts_in_window,
+            SUM(CASE WHEN c.is_demand_signal = 1 THEN 1 ELSE 0 END) AS signals_in_window
+        FROM sources s
+        LEFT JOIN posts p
+               ON p.source_id = s.id AND p.scraped_at >= ?
+        LEFT JOIN classifications c
+               ON c.post_id = p.id AND c.classifier_version = ?
+        WHERE s.enabled = 1
+        GROUP BY s.id
+        ORDER BY signals_in_window DESC, posts_in_window DESC
+        """,
+        (since_iso, classifier_version),
+    )
+    return list(cur.fetchall())
+
+
+def upsert_digest(
+    conn: sqlite3.Connection,
+    *,
+    week_iso: str,
+    content_md: str,
+    posts_count: int,
+    candidates_count: int,
+) -> int:
+    cur = conn.execute(
+        """
+        INSERT INTO digests (week_iso, content_md, posts_count, candidates_count)
+        VALUES (?, ?, ?, ?)
+        ON CONFLICT(week_iso) DO UPDATE SET
+            content_md = excluded.content_md,
+            generated_at = datetime('now'),
+            posts_count = excluded.posts_count,
+            candidates_count = excluded.candidates_count
+        RETURNING id
+        """,
+        (week_iso, content_md, posts_count, candidates_count),
+    )
+    row = cur.fetchone()
+    conn.commit()
+    return int(row["id"])
+
+
+def get_latest_digest(conn: sqlite3.Connection) -> sqlite3.Row | None:
+    cur = conn.execute(
+        "SELECT * FROM digests ORDER BY generated_at DESC LIMIT 1"
+    )
+    return cur.fetchone()

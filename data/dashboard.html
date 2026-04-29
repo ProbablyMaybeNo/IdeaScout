@@ -1,0 +1,484 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>IdeaScout Dashboard — 2026-04-29 19:28 UTC</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <style>
+    :root {
+      --bg:        #0d1117;
+      --panel:     #161b22;
+      --border:    #30363d;
+      --text:      #e6edf3;
+      --dim:       #8b949e;
+      --accent:    #58a6ff;
+      --score-hi:  #3fb950;
+      --score-mid: #d29922;
+      --score-lo:  #6e7681;
+      --tag-bg:    #1f6feb22;
+      --tag-fg:    #58a6ff;
+      --err:       #f85149;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; }
+    body {
+      font: 14px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", "JetBrains Mono", monospace;
+      background: var(--bg); color: var(--text);
+    }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .wrap { max-width: 1200px; margin: 0 auto; padding: 32px 24px 64px; }
+    h1 { font-size: 24px; margin: 0 0 4px; font-weight: 600; }
+    h2 { font-size: 18px; margin: 32px 0 16px; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+    h3 { font-size: 15px; margin: 8px 0; font-weight: 500; }
+    .dim { color: var(--dim); }
+    .meta { color: var(--dim); font-size: 12px; margin-bottom: 24px; }
+
+    .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; }
+    .stat { padding: 12px 16px; background: var(--panel); border: 1px solid var(--border); border-radius: 6px; }
+    .stat .num { font-size: 24px; font-weight: 600; }
+    .stat .label { color: var(--dim); font-size: 12px; }
+
+    .controls { display: flex; gap: 8px; align-items: center; margin: 16px 0; }
+    .controls input, .controls select {
+      background: var(--panel); border: 1px solid var(--border); color: var(--text);
+      padding: 6px 10px; border-radius: 4px; font: inherit;
+    }
+
+    .signals { display: grid; gap: 12px; }
+    .signal-card {
+      background: var(--panel); border: 1px solid var(--border);
+      border-radius: 6px; padding: 14px 16px;
+    }
+    .signal-card header {
+      display: flex; gap: 12px; align-items: center; flex-wrap: wrap;
+      font-size: 12px; color: var(--dim); margin-bottom: 6px;
+    }
+    .score {
+      font-weight: 600; padding: 2px 8px; border-radius: 4px;
+      background: var(--panel); border: 1px solid var(--border);
+    }
+    .score-high { color: var(--score-hi); border-color: var(--score-hi); }
+    .score-mid  { color: var(--score-mid); border-color: var(--score-mid); }
+    .score-low  { color: var(--score-lo); border-color: var(--border); }
+    .source { font-weight: 500; color: var(--text); }
+    .posted { font-family: "JetBrains Mono", monospace; }
+    .summary { margin: 4px 0 8px; }
+    .scores { display: flex; gap: 12px; flex-wrap: wrap; font-family: "JetBrains Mono", monospace; font-size: 12px; color: var(--dim); margin-bottom: 8px; }
+    .scores .conf { color: var(--accent); }
+    .tags { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; }
+    .tag {
+      background: var(--tag-bg); color: var(--tag-fg); border: 1px solid var(--tag-fg);
+      padding: 1px 8px; border-radius: 999px; font-size: 11px;
+    }
+    .link { font-size: 12px; }
+
+    .bar-row { display: grid; grid-template-columns: 160px 1fr 120px; gap: 12px; align-items: center; margin: 4px 0; }
+    .bar-label { font-family: "JetBrains Mono", monospace; font-size: 12px; }
+    .bar-track { height: 14px; background: var(--bg); border: 1px solid var(--border); border-radius: 3px; overflow: hidden; }
+    .bar-fill { height: 100%; background: var(--accent); }
+    .bar-value { font-size: 12px; color: var(--dim); }
+
+    table { width: 100%; border-collapse: collapse; }
+    th, td { text-align: left; padding: 6px 10px; border-bottom: 1px solid var(--border); font-size: 13px; }
+    th { color: var(--dim); font-weight: 500; }
+    td.num { text-align: right; font-family: "JetBrains Mono", monospace; }
+    td.dim { color: var(--dim); font-family: "JetBrains Mono", monospace; font-size: 12px; }
+    .status-ok { color: var(--score-hi); }
+    .status-err { color: var(--err); }
+
+    .empty { color: var(--dim); padding: 24px; text-align: center; background: var(--panel); border: 1px dashed var(--border); border-radius: 6px; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>IdeaScout Dashboard</h1>
+    <div class="meta">Generated 2026-04-29 19:28 UTC · classifier v1.0 · window: last 7 days</div>
+
+    <div class="stats">
+      <div class="stat"><div class="num">66</div><div class="label">posts ingested (7d)</div></div>
+      <div class="stat"><div class="num">65</div><div class="label">classified</div></div>
+      <div class="stat"><div class="num">7</div><div class="label">demand signals</div></div>
+      <div class="stat"><div class="num">3</div><div class="label">high-conviction</div></div>
+      <div class="stat"><div class="num">13</div><div class="label">sources enabled</div></div>
+    </div>
+
+    <h2>Top demand signals</h2>
+    <div class="controls">
+      <input id="filter" placeholder="filter by tag or text…">
+      <select id="min-score">
+        <option value="0">all scores</option>
+        <option value="12">score ≥ 12</option>
+        <option value="15" selected>score ≥ 15 (high conviction)</option>
+        <option value="18">score ≥ 18</option>
+      </select>
+    </div>
+    <section class="signals" id="signals">
+      
+    <article class="signal-card" data-tags="developer_tools,ai_builders" data-score="16">
+      <header>
+        <span class="score score-high">16/25</span>
+        <span class="source">HN front page</span>
+        <span class="posted">2026-04-28T23:59</span>
+      </header>
+      <h3>Regression: malware reminder on every read still causes subagent refusals</h3>
+      <p class="summary">User wants a more efficient and cost-effective way to manage code generation tasks in a secure environment.</p>
+      <div class="scores">
+        <span title="urgency">u 3</span>
+        <span title="solo-buildable">b 4</span>
+        <span title="workaround pain">w 3</span>
+        <span title="payment evidence">p 1</span>
+        <span title="niche specificity">n 5</span>
+        <span class="conf">conf 0.70</span>
+      </div>
+      <div class="tags"><span class="tag">developer_tools</span><span class="tag">ai_builders</span></div>
+      <a class="link" href="https://github.com/anthropics/claude-code/issues/49363" target="_blank" rel="noopener">view post →</a>
+    </article>
+    
+
+    <article class="signal-card" data-tags="developer_tools" data-score="15">
+      <header>
+        <span class="score score-high">15/25</span>
+        <span class="source">HN front page</span>
+        <span class="posted">2026-04-29T14:00</span>
+      </header>
+      <h3>Tangled – We need a federation of forges</h3>
+      <p class="summary">User wants a federation of code hosting platforms for easier collaboration and integration among developers.</p>
+      <div class="scores">
+        <span title="urgency">u 3</span>
+        <span title="solo-buildable">b 4</span>
+        <span title="workaround pain">w 2</span>
+        <span title="payment evidence">p 1</span>
+        <span title="niche specificity">n 5</span>
+        <span class="conf">conf 0.70</span>
+      </div>
+      <div class="tags"><span class="tag">developer_tools</span></div>
+      <a class="link" href="https://blog.tangled.org/federation/" target="_blank" rel="noopener">view post →</a>
+    </article>
+    
+
+    <article class="signal-card" data-tags="developer_tools,ai_builders" data-score="15">
+      <header>
+        <span class="score score-high">15/25</span>
+        <span class="source">r/mcp</span>
+        <span class="posted">2026-04-29T12:39</span>
+      </header>
+      <h3>Connect MCP(MySQL/MariaDB) with claude</h3>
+      <p class="summary">User wants a tool to securely and efficiently connect Claude Desktop with a remote MySQL/MariaDB database hosted on a server.</p>
+      <div class="scores">
+        <span title="urgency">u 4</span>
+        <span title="solo-buildable">b 3</span>
+        <span title="workaround pain">w 2</span>
+        <span title="payment evidence">p 1</span>
+        <span title="niche specificity">n 5</span>
+        <span class="conf">conf 0.70</span>
+      </div>
+      <div class="tags"><span class="tag">developer_tools</span><span class="tag">ai_builders</span></div>
+      <a class="link" href="https://www.reddit.com/r/mcp/comments/1syxmbf/connect_mcpmysqlmariadb_with_claude/" target="_blank" rel="noopener">view post →</a>
+    </article>
+    
+
+    <article class="signal-card" data-tags="tabletop_gaming,ai_builders" data-score="14">
+      <header>
+        <span class="score score-mid">14/25</span>
+        <span class="source">HN front page</span>
+        <span class="posted">2026-04-29T12:43</span>
+      </header>
+      <h3>Letting AI play my game – building an agentic test harness to help play-testing</h3>
+      <p class="summary">User wants an automated test harness for AI-driven game play-testing.</p>
+      <div class="scores">
+        <span title="urgency">u 3</span>
+        <span title="solo-buildable">b 4</span>
+        <span title="workaround pain">w 2</span>
+        <span title="payment evidence">p 1</span>
+        <span title="niche specificity">n 4</span>
+        <span class="conf">conf 0.70</span>
+      </div>
+      <div class="tags"><span class="tag">tabletop_gaming</span><span class="tag">ai_builders</span></div>
+      <a class="link" href="https://blog.jeffschomay.com/letting-ai-play-my-game" target="_blank" rel="noopener">view post →</a>
+    </article>
+    
+
+    <article class="signal-card" data-tags="health,3d_printing" data-score="13">
+      <header>
+        <span class="score score-mid">13/25</span>
+        <span class="source">HN front page</span>
+        <span class="posted">2026-04-29T14:47</span>
+      </header>
+      <h3>An open-source stethoscope that costs between $2.5 and $5 to produce</h3>
+      <p class="summary">User wants an affordable open-source stethoscope design for medical or educational purposes.</p>
+      <div class="scores">
+        <span title="urgency">u 2</span>
+        <span title="solo-buildable">b 4</span>
+        <span title="workaround pain">w 1</span>
+        <span title="payment evidence">p 1</span>
+        <span title="niche specificity">n 5</span>
+        <span class="conf">conf 0.70</span>
+      </div>
+      <div class="tags"><span class="tag">health</span><span class="tag">3d_printing</span></div>
+      <a class="link" href="https://github.com/GliaX/Stethoscope" target="_blank" rel="noopener">view post →</a>
+    </article>
+    
+
+    <article class="signal-card" data-tags="developer_tools,general_consumer" data-score="12">
+      <header>
+        <span class="score score-mid">12/25</span>
+        <span class="source">HN front page</span>
+        <span class="posted">2026-04-28T22:07</span>
+      </header>
+      <h3>Your Terminal Is Burning Battery Like It&#x27;s Mining Bitcoin</h3>
+      <p class="summary">User wants a tool to monitor and reduce battery usage caused by terminal processes for better device efficiency.</p>
+      <div class="scores">
+        <span title="urgency">u 3</span>
+        <span title="solo-buildable">b 4</span>
+        <span title="workaround pain">w 2</span>
+        <span title="payment evidence">p 1</span>
+        <span title="niche specificity">n 2</span>
+        <span class="conf">conf 0.70</span>
+      </div>
+      <div class="tags"><span class="tag">developer_tools</span><span class="tag">general_consumer</span></div>
+      <a class="link" href="https://www.frr.dev/posts/terminal-gpu-battery-macbook-ghostty-iterm2/" target="_blank" rel="noopener">view post →</a>
+    </article>
+    
+
+    <article class="signal-card" data-tags="general_b2b,productivity" data-score="11">
+      <header>
+        <span class="score score-low">11/25</span>
+        <span class="source">r/SaaS</span>
+        <span class="posted">2026-04-29T16:12</span>
+      </header>
+      <h3>Do you think digital business cards make more sense as B2C or B2B SaaS?</h3>
+      <p class="summary">User wants a digital business card solution with CRM features for team networking and contact management.</p>
+      <div class="scores">
+        <span title="urgency">u 3</span>
+        <span title="solo-buildable">b 5</span>
+        <span title="workaround pain">w 1</span>
+        <span title="payment evidence">p 1</span>
+        <span title="niche specificity">n 1</span>
+        <span class="conf">conf 0.70</span>
+      </div>
+      <div class="tags"><span class="tag">general_b2b</span><span class="tag">productivity</span></div>
+      <a class="link" href="https://www.reddit.com/r/SaaS/comments/1sz3eb6/do_you_think_digital_business_cards_make_more/" target="_blank" rel="noopener">view post →</a>
+    </article>
+    
+    </section>
+
+    <h2>Domain breakdown</h2>
+    
+            <div class="bar-row">
+              <span class="bar-label">developer_tools</span>
+              <div class="bar-track"><div class="bar-fill" style="width:100.0%"></div></div>
+              <span class="bar-value">4  <em>(avg 14.5)</em></span>
+            </div>
+            
+
+            <div class="bar-row">
+              <span class="bar-label">ai_builders</span>
+              <div class="bar-track"><div class="bar-fill" style="width:75.0%"></div></div>
+              <span class="bar-value">3  <em>(avg 15.0)</em></span>
+            </div>
+            
+
+            <div class="bar-row">
+              <span class="bar-label">tabletop_gaming</span>
+              <div class="bar-track"><div class="bar-fill" style="width:25.0%"></div></div>
+              <span class="bar-value">1  <em>(avg 14.0)</em></span>
+            </div>
+            
+
+            <div class="bar-row">
+              <span class="bar-label">3d_printing</span>
+              <div class="bar-track"><div class="bar-fill" style="width:25.0%"></div></div>
+              <span class="bar-value">1  <em>(avg 13.0)</em></span>
+            </div>
+            
+
+            <div class="bar-row">
+              <span class="bar-label">health</span>
+              <div class="bar-track"><div class="bar-fill" style="width:25.0%"></div></div>
+              <span class="bar-value">1  <em>(avg 13.0)</em></span>
+            </div>
+            
+
+            <div class="bar-row">
+              <span class="bar-label">general_consumer</span>
+              <div class="bar-track"><div class="bar-fill" style="width:25.0%"></div></div>
+              <span class="bar-value">1  <em>(avg 12.0)</em></span>
+            </div>
+            
+
+            <div class="bar-row">
+              <span class="bar-label">general_b2b</span>
+              <div class="bar-track"><div class="bar-fill" style="width:25.0%"></div></div>
+              <span class="bar-value">1  <em>(avg 11.0)</em></span>
+            </div>
+            
+
+            <div class="bar-row">
+              <span class="bar-label">productivity</span>
+              <div class="bar-track"><div class="bar-fill" style="width:25.0%"></div></div>
+              <span class="bar-value">1  <em>(avg 11.0)</em></span>
+            </div>
+            
+
+    <h2>Source health</h2>
+    
+    <table class="src-table">
+      <thead><tr>
+        <th>Source</th><th>Type</th><th>Posts (7d)</th><th>Signals (7d)</th>
+        <th>Last polled</th><th>Status</th>
+      </tr></thead>
+      <tbody>
+        
+            <tr>
+              <td>HN front page</td>
+              <td>hackernews</td>
+              <td class="num">43</td>
+              <td class="num">5</td>
+              <td class="dim">2026-04-29T19:24:59</td>
+              <td><span class="status-ok">ok</span></td>
+            </tr>
+            
+            <tr>
+              <td>r/mcp</td>
+              <td>reddit</td>
+              <td class="num">2</td>
+              <td class="num">1</td>
+              <td class="dim">2026-04-29T19:24:58</td>
+              <td><span class="status-ok">ok</span></td>
+            </tr>
+            
+            <tr>
+              <td>r/SaaS</td>
+              <td>reddit</td>
+              <td class="num">1</td>
+              <td class="num">1</td>
+              <td class="dim">2026-04-29T19:24:51</td>
+              <td><span class="status-ok">ok</span></td>
+            </tr>
+            
+            <tr>
+              <td>Pew Research — Internet &amp; Tech</td>
+              <td>rss</td>
+              <td class="num">20</td>
+              <td class="num">0</td>
+              <td class="dim">2026-04-29T19:25:01</td>
+              <td><span class="status-ok">ok</span></td>
+            </tr>
+            
+            <tr>
+              <td>r/microsaas</td>
+              <td>reddit</td>
+              <td class="num">0</td>
+              <td class="num">0</td>
+              <td class="dim">2026-04-29T19:24:51</td>
+              <td><span class="status-ok">ok</span></td>
+            </tr>
+            
+            <tr>
+              <td>r/EntrepreneurRideAlong</td>
+              <td>reddit</td>
+              <td class="num">0</td>
+              <td class="num">0</td>
+              <td class="dim">2026-04-29T19:24:52</td>
+              <td><span class="status-ok">ok</span></td>
+            </tr>
+            
+            <tr>
+              <td>r/Warhammer40k</td>
+              <td>reddit</td>
+              <td class="num">0</td>
+              <td class="num">0</td>
+              <td class="dim">2026-04-29T19:24:54</td>
+              <td><span class="status-ok">ok</span></td>
+            </tr>
+            
+            <tr>
+              <td>r/minipainting</td>
+              <td>reddit</td>
+              <td class="num">0</td>
+              <td class="num">0</td>
+              <td class="dim">2026-04-29T19:24:55</td>
+              <td><span class="status-ok">ok</span></td>
+            </tr>
+            
+            <tr>
+              <td>r/ClaudeAI</td>
+              <td>reddit</td>
+              <td class="num">0</td>
+              <td class="num">0</td>
+              <td class="dim">2026-04-29T19:24:56</td>
+              <td><span class="status-ok">ok</span></td>
+            </tr>
+            
+            <tr>
+              <td>r/LocalLLaMA</td>
+              <td>reddit</td>
+              <td class="num">0</td>
+              <td class="num">0</td>
+              <td class="dim">2026-04-29T19:24:57</td>
+              <td><span class="status-ok">ok</span></td>
+            </tr>
+            
+            <tr>
+              <td>HN Ask</td>
+              <td>hackernews</td>
+              <td class="num">0</td>
+              <td class="num">0</td>
+              <td class="dim">2026-04-29T19:24:59</td>
+              <td><span class="status-ok">ok</span></td>
+            </tr>
+            
+            <tr>
+              <td>r/SideProject</td>
+              <td>reddit</td>
+              <td class="num">0</td>
+              <td class="num">0</td>
+              <td class="dim">2026-04-29T19:25:00</td>
+              <td><span class="status-ok">ok</span></td>
+            </tr>
+            
+            <tr>
+              <td>r/Entrepreneur</td>
+              <td>reddit</td>
+              <td class="num">0</td>
+              <td class="num">0</td>
+              <td class="dim">2026-04-29T19:25:01</td>
+              <td><span class="status-ok">ok</span></td>
+            </tr>
+            
+      </tbody>
+    </table>
+    
+
+    <h2>Latest digest</h2>
+    <p>Latest digest: <strong>2026-W18</strong> <span class="dim">(generated 2026-04-29 19:26:07)</span></p>
+    <p><a href="data/digests/2026-W18.md">open digest markdown →</a></p>
+  </div>
+
+  <script>
+    (function () {
+      const filter = document.getElementById('filter');
+      const minScore = document.getElementById('min-score');
+      const cards = Array.from(document.querySelectorAll('#signals .signal-card'));
+
+      function apply() {
+        const q = (filter.value || '').toLowerCase();
+        const min = parseInt(minScore.value, 10) || 0;
+        let visible = 0;
+        for (const c of cards) {
+          const score = parseInt(c.dataset.score, 10) || 0;
+          const tags = (c.dataset.tags || '').toLowerCase();
+          const text = c.textContent.toLowerCase();
+          const ok = score >= min && (q === '' || tags.includes(q) || text.includes(q));
+          c.style.display = ok ? '' : 'none';
+          if (ok) visible++;
+        }
+      }
+      filter.addEventListener('input', apply);
+      minScore.addEventListener('change', apply);
+      apply();
+    })();
+  </script>
+</body>
+</html>

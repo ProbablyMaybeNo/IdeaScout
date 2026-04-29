@@ -20,7 +20,7 @@ Local-first scouting infrastructure that monitors 15-30 sources daily, classifie
 ## Quick start
 
 ```bash
-# install deps (only feedparser + pyyaml)
+# install deps
 py -3.13 -m pip install -e .
 
 # initialize the database
@@ -29,11 +29,17 @@ py -3.13 -m ideascout init
 # poll all enabled sources
 py -3.13 -m ideascout poll
 
-# classify newly-ingested posts (Day 2)
+# classify newly-ingested posts via local Ollama (qwen2.5:14b)
 py -3.13 -m ideascout classify
 
-# generate this week's digest (Day 3)
+# generate this week's digest -> data/digests/{week}.md
 py -3.13 -m ideascout digest
+
+# generate self-contained HTML dashboard -> data/dashboard.html
+py -3.13 -m ideascout dashboard --open
+
+# show top demand signals on the CLI
+py -3.13 -m ideascout signals
 ```
 
 ## Adding a new source
@@ -90,5 +96,6 @@ See `scripts/README.md` for details and troubleshooting.
 - [x] Day 1 — scaffolding, schema, Reddit/HN/RSS adapters, ingest pipeline
 - [x] Day 2 — Ollama classifier integration (5-signal demand framework)
 - [x] Day 2.5 — Windows Task Scheduler automation (daily 06:00 / weekly Fri 07:00)
-- [ ] Day 3 — Friday digest generator + Next.js dashboard
+- [x] Day 3 — Friday markdown digest + self-contained HTML dashboard
 - [ ] Day 4 — ProductHunt + GitHub Trending + PulseMCP + Etsy + Google Trends adapters
+- [ ] Day 5 — `validators/` module for on-demand per-candidate validation

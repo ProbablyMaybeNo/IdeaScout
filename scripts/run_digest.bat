@@ -18,6 +18,10 @@ cd /d "%ROOT%"
 echo === Digest run started %DATE% %TIME% === >> "%LOG%"
 py -3.13 -m ideascout digest >> "%LOG%" 2>&1
 set "RC=%ERRORLEVEL%"
+if %RC% EQU 0 (
+  py -3.13 -m ideascout dashboard >> "%LOG%" 2>&1
+  set "RC=%ERRORLEVEL%"
+)
 echo === Digest run finished %DATE% %TIME% rc=%RC% === >> "%LOG%"
 
 endlocal

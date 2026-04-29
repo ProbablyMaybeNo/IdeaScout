@@ -194,9 +194,45 @@ def cmd_signals(args) -> int:
     return 0
 
 
-def cmd_digest(_args) -> int:
-    print("digest: not implemented yet — Day 3.", file=sys.stderr)
-    return 1
+def cmd_dashboard(args) -> int:
+    from ideascout.dashboard import generate_dashboard
+
+    conn = connect()
+    init_schema(conn)
+    sync_sources_to_db(conn)
+    result = generate_dashboard(conn, signal_limit=args.limit)
+    print(f"Dashboard generated:")
+    print(f"  posts (7d):    {result.posts_in_window}")
+    print(f"  signals shown: {result.signals_in_window}")
+    print(f"  written to:    {result.output_path}")
+    if args.open:
+        import webbrowser
+        webbrowser.open(result.output_path.as_uri())
+    return 0
+
+
+def cmd_digest(args) -> int:
+    from ideascout.digest import generate_digest
+
+    conn = connect()
+    init_schema(conn)
+    sync_sources_to_db(conn)
+    result = generate_digest(
+        conn,
+        top_n=args.top,
+        table_limit=args.table_limit,
+        write_file=not args.dry_run,
+    )
+    print(f"Digest {result.week_iso}:")
+    print(f"  posts in window: {result.posts_count}")
+    print(f"  demand signals:  {result.candidates_count}")
+    if args.dry_run:
+        print("  (dry run — no file written)")
+        print()
+        print(result.content_md)
+    else:
+        print(f"  written to:      {result.output_path}")
+    return 0
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -222,7 +258,16 @@ def build_parser() -> argparse.ArgumentParser:
     p_sig.add_argument("--min-confidence", type=float, default=0.5)
     p_sig.set_defaults(func=cmd_signals)
 
-    sub.add_parser("digest", help="(Day 3) generate weekly markdown digest").set_defaults(func=cmd_digest)
+    p_dig = sub.add_parser("digest", help="generate weekly markdown digest")
+    p_dig.add_argument("--top", type=int, default=5, help="top-N candidate detail blocks")
+    p_dig.add_argument("--table-limit", type=int, default=20, help="rows in summary table")
+    p_dig.add_argument("--dry-run", action="store_true", help="print to stdout, don't write file")
+    p_dig.set_defaults(func=cmd_digest)
+
+    p_dash = sub.add_parser("dashboard", help="generate self-contained HTML dashboard")
+    p_dash.add_argument("--limit", type=int, default=50, help="signals to render")
+    p_dash.add_argument("--open", action="store_true", help="open in default browser when done")
+    p_dash.set_defaults(func=cmd_dashboard)
 
     return p
 
