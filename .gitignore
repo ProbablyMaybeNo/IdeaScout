@@ -4,6 +4,7 @@ data/*.db-journal
 data/*.db-shm
 data/*.db-wal
 data/digests/*.md
+data/dashboard.html
 data/logs/
 .env
 
